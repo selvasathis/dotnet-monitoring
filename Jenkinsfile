@@ -74,22 +74,17 @@ pipeline {
                 }
             }
         }
-        stage ('remove all the images') {
-            steps {
-                script {
-                    DOCKER_IMAGES = sh(script: 'docker image ls --format "{{.Repository}}"', returnStdout: true).trim()
-                    def imagesArray = DOCKER_IMAGES.split('\n')
-
-                    imagesArray.each { image ->
-                        sh "docker rmi -f ${image}"
-                    }
-                }
-            }
-        }
+        // stage ('remove all the images') {
+        //     steps {
+        //         script {
+        //             sh 'docker rmi 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest secops:latest' 
+        //     }
+        // }
+        // }
         stage ('docker run') {
             steps {
                 script {
-                    sh 'docker run -itd --name dotnetmonitering-app -p 9000:80 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest'
+                    sh 'docker run -itd --name dotnetmonitering-app -p 8090:80 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest'
                 }
             }
         }
