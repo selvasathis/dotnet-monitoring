@@ -36,5 +36,20 @@ pipeline {
                 }
             }
         }
+        stage ('trivy scan file') {
+            steps {
+                script {
+                    sh "trivy fs . > trivyreport.txt"
+                }
+            }
+        }
+        stage ('owasp depentancy check'){
+            steps {
+                script {
+                    dependencyCheck additionalArguments: '--scan ./ --format XML ', odcInstallation: 'new'
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                }
+            }
+        }
     }
 }
