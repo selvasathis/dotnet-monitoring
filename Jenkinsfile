@@ -39,7 +39,7 @@ pipeline {
         stage ('trivy scan file') {
             steps {
                 script {
-                    sh "trivy fs . > trivyreport.txt"
+                    sh "trivy fs . > trivyfsreport.txt"
                 }
             }
         }
@@ -48,6 +48,48 @@ pipeline {
                 script {
                     dependencyCheck additionalArguments: '--scan ./ --format XML ', odcInstallation: 'new'
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                }
+            }
+        }
+        stage ('docker build') {
+            steps {
+                script {
+                    sh 'docker build -t secops .'
+                    sh 'docker tag secops:latest 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest'
+                }
+            }
+        }
+        stage ('image scan') {
+            steps {
+                script {
+                    sh 'trivy image 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest > trivyimagereport.txt'
+                }
+            }
+        }
+        stage ('docker login and push') {
+            steps {
+                script {
+                    sh 'aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com'
+                    sh 'docker push 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest'
+                }
+            }
+        }
+        stage ('remove all the images') {
+            steps {
+                script {
+                    DOCKER_IMAGES = sh(script: 'docker image ls --format "{{.Repository}}"', returnStdout: true).trim()
+                    def imagesArray = DOCKER_IMAGES.split('\n')
+
+                    imagesArray.each { image ->
+                        sh "docker rmi -f ${image}"
+                    }
+                }
+            }
+        }
+        stage ('docker run') {
+            steps {
+                script {
+                    sh 'docker run -itd --name dotnetmonitering-app -p 9000:80 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest'
                 }
             }
         }
