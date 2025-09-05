@@ -17,7 +17,7 @@ pipeline {
             steps {
                 script {
                     teamsNotification(
-                        " Build Started",
+                        "Build STARTED",
                         env.IMAGE_NAME,
                         env.TAG,
                         env.BRANCH
@@ -52,7 +52,7 @@ pipeline {
                 failure {
                     teamsNotification(
                         "FAILURE in Docker Build",
-                        env.IMAGE_NAME,
+                        "${env.ECR_REPO}/${env.IMAGE_NAME}",
                         env.TAG,
                         env.BRANCH
                     )
@@ -76,7 +76,7 @@ pipeline {
                 failure {
                     teamsNotification(
                         "FAILURE in Docker Push",
-                        env.IMAGE_NAME,
+                        "${env.ECR_REPO}/${env.IMAGE_NAME}",
                         env.TAG,
                         env.BRANCH
                     )
