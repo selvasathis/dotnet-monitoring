@@ -1,91 +1,67 @@
+@Library('dpod-test@main') _
 pipeline {
     agent any
-    tools {
-        jdk 'jdk17'
-    }
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
+        IMAGE_NAME = 'extraction-schemaagent'
+        AWS_REGION = 'us-east-1'
+        GIT_URL = 'https://github.com/selvasathis/dotnet-monitoring.git'
+        BRANCH = 'main'
+        DOCKER_BUILDKIT = '1'
+        CREDENTIALS_ID = 'test-token'
+        DOCKER_FILE = 'Dockerfile'
+        ECR_REPO = 'public.ecr.aws/y9c9p0b6'
+        TAG = "rc-v1.${BUILD_NUMBER}"
     }
     stages {
-        stage('git checkout') {
+        stage('Checkout') {
             steps {
                 script {
-                    // Assuming you have the credentials configured in Jenkins and 'github-tocken' is the ID
-                    git branch: 'main', credentialsId: 'github-tocken', url: 'https://github.com/selvasathis/dotnet-monitoring.git'
+                    scmCheckout(
+                        gitUrl: env.GIT_URL,
+                        branch: env.BRANCH,
+                        credentialsId: env.CREDENTIALS_ID
+                    )
                 }
             }
         }
-        stage('sonar-scanner') {
-            steps {
-                script {
-                    withSonarQubeEnv('sonar-server') {
-                        // Assuming 'sonar.projectKey' and 'sonar.projectName' are configured properly
-                        sh "$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=dotnet-monitoring -Dsonar.projectKey=dotnet-monitoring"
-                    }
-                }
-            }
-        }
-        stage ('quality gate') {
-            steps {
-                script {
-                    def qg = waitForQualityGate()
-                    if (qg.status != 'OK') {
-                        error "Pipeline aborted due to Quality Gate failure: ${qg.status}"
-                    }
-                    echo "code ok"
-                }
-            }
-        }
-        stage ('trivy scan file') {
-            steps {
-                script {
-                    sh "trivy fs . > trivyfsreport.txt"
-                }
-            }
-        }
-        stage ('owasp depentancy check'){
-            steps {
-                script {
-                    dependencyCheck additionalArguments: '--scan ./ --format XML ', odcInstallation: 'new'
-                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-                }
-            }
-        }
-        stage ('docker build') {
-            steps {
-                script {
-                    sh 'docker build -t secops .'
-                    sh 'docker tag secops:latest 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest'
-                }
-            }
-        }
-        stage ('image scan') {
-            steps {
-                script {
-                    sh 'trivy image 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest > trivyimagereport.txt'
-                }
-            }
-        }
-        stage ('docker login and push') {
-            steps {
-                script {
-                    sh 'aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com'
-                    sh 'docker push 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest'
-                }
-            }
-        }
-        // stage ('remove all the images') {
+        // stage('sonar-scanner') {
         //     steps {
-        //         script {
-        //             sh 'docker rmi 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest secops:latest' 
+        //         sonarScanner(IMAGE_NAME)
         //     }
         // }
+        // stage('sonar-quality-gate') {
+        //     steps {
+        //         sonarQualityGate()
+        //     }
         // }
-        stage ('docker run') {
+        stage('docker build') {
             steps {
                 script {
-                    sh 'docker run -itd --name dotnetmonitering-app -p 8090:80 267765472985.dkr.ecr.ap-northeast-1.amazonaws.com/secops:latest'
+                    dockerBuild(DOCKER_FILE,IMAGE_NAME)
                 }
+            }
+        }
+        // stage('trivy scan docker image') {
+        //     steps {
+        //         trivyScanImage(IMAGE_NAME)
+        //     }
+        // }
+        stage('docker tag,login and push') {
+            steps {
+                pushToEcr(IMAGE_NAME)
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                def buildStatus = currentBuild.result ?: 'SUCCESS'
+                teamsNotification(
+                    buildStatus,
+                    "${ECR_REPO}/${IMAGE_NAME}",
+                    TAG,
+                    BRANCH
+                )
             }
         }
     }
