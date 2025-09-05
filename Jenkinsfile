@@ -9,7 +9,7 @@ pipeline {
         DOCKER_BUILDKIT = '1'
         CREDENTIALS_ID = 'test-token'
         DOCKER_FILE = 'Dockerfile'
-        ECR_REPO = 'public.ecr.aws/y9c9p0b'
+        ECR_REPO = 'public.ecr.aws/y9c9p0b6'
         TAG = "qa-v1.${BUILD_NUMBER}"
     }
     stages {
@@ -17,7 +17,7 @@ pipeline {
             steps {
                 script {
                     teamsNotification(
-                        "STARTED",
+                        "Started",
                         env.IMAGE_NAME,
                         env.TAG,
                         env.BRANCH
