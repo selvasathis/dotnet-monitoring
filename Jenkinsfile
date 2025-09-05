@@ -16,6 +16,12 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
+                    teamsNotification(
+                        " Build Started",
+                        env.IMAGE_NAME,
+                        env.TAG,
+                        env.BRANCH
+                    )
                     scmCheckout(
                         gitUrl: env.GIT_URL,
                         branch: env.BRANCH,
@@ -37,9 +43,21 @@ pipeline {
         stage('docker build') {
             steps {
                 script {
-                    dockerBuild(DOCKER_FILE,IMAGE_NAME)
+                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                        dockerBuild(DOCKER_FILE,IMAGE_NAME)
+                    }
                 }
-            }
+                }
+                post {
+                failure {
+                    teamsNotification(
+                        "FAILURE in Docker Build",
+                        env.IMAGE_NAME,
+                        env.TAG,
+                        env.BRANCH
+                    )
+                }
+                }
         }
         // stage('trivy scan docker image') {
         //     steps {
@@ -48,7 +66,21 @@ pipeline {
         // }
         stage('docker tag,login and push') {
             steps {
-                pushToEcr(IMAGE_NAME)
+              script {
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                  pushToEcr(IMAGE_NAME)
+                }
+              }
+            }
+            post {
+                failure {
+                    teamsNotification(
+                        "FAILURE in Docker Push",
+                        env.IMAGE_NAME,
+                        env.TAG,
+                        env.BRANCH
+                    )
+                }
             }
         }
     }
