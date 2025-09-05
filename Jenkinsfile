@@ -5,12 +5,12 @@ pipeline {
         IMAGE_NAME = 'extraction-schemaagent'
         AWS_REGION = 'us-east-1'
         GIT_URL = 'https://github.com/selvasathis/dotnet-monitoring.git'
-        BRANCH = 'main'
+        BRANCH = 'test'
         DOCKER_BUILDKIT = '1'
         CREDENTIALS_ID = 'test-token'
         DOCKER_FILE = 'Dockerfile'
         ECR_REPO = 'public.ecr.aws/y9c9p0b6'
-        TAG = "rc-v1.${BUILD_NUMBER}"
+        TAG = "qa-v1.${BUILD_NUMBER}"
     }
     stages {
         stage('Checkout') {
