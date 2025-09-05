@@ -16,12 +16,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    teamsNotification(
-                        "Started",
-                        env.IMAGE_NAME,
-                        env.TAG,
-                        env.BRANCH
-                    )
+                    teamsNotification("Started", "${env.ECR_REPO}/${env.IMAGE_NAME}", env.TAG, env.BRANCH)
                     scmCheckout(
                         gitUrl: env.GIT_URL,
                         branch: env.BRANCH,
@@ -40,49 +35,49 @@ pipeline {
         //         sonarQualityGate()
         //     }
         // }
-        stage('docker build') {
-            steps {
-                script {
-                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        dockerBuild(DOCKER_FILE,IMAGE_NAME)
-                    }
-                }
-                }
-                post {
-                failure {
-                    teamsNotification(
-                        "FAILURE in Docker Build",
-                        "${env.ECR_REPO}/${env.IMAGE_NAME}",
-                        env.TAG,
-                        env.BRANCH
-                    )
-                }
-                }
-        }
+        // stage('docker build') {
+        //     steps {
+        //         script {
+        //             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+        //                 dockerBuild(DOCKER_FILE,IMAGE_NAME)
+        //             }
+        //         }
+        //         }
+        //         post {
+        //         failure {
+        //             teamsNotification(
+        //                 "FAILURE in Docker Build",
+        //                 "${env.ECR_REPO}/${env.IMAGE_NAME}",
+        //                 env.TAG,
+        //                 env.BRANCH
+        //             )
+        //         }
+        //         }
+        // }
         // stage('trivy scan docker image') {
         //     steps {
         //         trivyScanImage(IMAGE_NAME)
         //     }
         // }
-        stage('docker tag,login and push') {
-            steps {
-              script {
-                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                  pushToEcr(IMAGE_NAME)
-                }
-              }
-            }
-            post {
-                failure {
-                    teamsNotification(
-                        "FAILURE in Docker Push",
-                        "${env.ECR_REPO}/${env.IMAGE_NAME}",
-                        env.TAG,
-                        env.BRANCH
-                    )
-                }
-            }
-        }
+    //     stage('docker tag,login and push') {
+    //         steps {
+    //           script {
+    //             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+    //               pushToEcr(IMAGE_NAME)
+    //             }
+    //           }
+    //         }
+    //         post {
+    //             failure {
+    //                 teamsNotification(
+    //                     "FAILURE in Docker Push",
+    //                     "${env.ECR_REPO}/${env.IMAGE_NAME}",
+    //                     env.TAG,
+    //                     env.BRANCH
+    //                 )
+    //             }
+    //         }
+    //     }
     }
     post {
         always {
