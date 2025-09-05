@@ -23,6 +23,7 @@ RUN apt-get update && \
 RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
  dpkg -i packages-microsoft-prod.deb && \
   rm packages-microsoft-prod.deb
+#run the packages
 RUN apt-get update && \
   apt-get install -y dotnet-sdk-8.0
 # Copy the compiled application from the build image
