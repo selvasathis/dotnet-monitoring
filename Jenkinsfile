@@ -16,7 +16,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    teamsNotification("Started", "${env.ECR_REPO}/${env.IMAGE_NAME}", env.TAG, env.BRANCH)
+                    teamsNotification("STARTED", "${env.ECR_REPO}/${env.IMAGE_NAME}", env.TAG, env.BRANCH)
                     scmCheckout(
                         gitUrl: env.GIT_URL,
                         branch: env.BRANCH,
